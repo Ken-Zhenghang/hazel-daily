@@ -47,6 +47,8 @@ const SLANGS = [
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
+const openAiApiKey = process.env.OPENAI_API_KEY;
+const openAiImageModel = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1";
 
 if (!botToken || !chatId) {
   console.log("Skipping Hazel Telegram push because TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set.");
@@ -55,55 +57,69 @@ if (!botToken || !chatId) {
 
 const profilePath = path.join(process.cwd(), "data", "hazel-profile.json");
 const profile = JSON.parse(await readFile(profilePath, "utf8"));
+const now = new Date();
 const weather = await fetchChicagoWeather();
-const slang = pickSlang(new Date());
-const outfit = buildOutfit(profile, weather, new Date());
+const slang = pickSlang(now);
+const outfit = buildOutfit(profile, weather, now);
 
 const lines = [
-  `Hazel，早上好 ${pickGreetingEmoji(new Date())}`,
+  `${pickGreetingEmoji(now)} Hazel，早上好`,
   "",
-  "<b>今日英语口语</b>",
-  `${slang.phrase}`,
-  `意思: ${slang.meaningZh}`,
-  `例句: ${slang.example}`,
+  "──────────",
+  "今日口语 | Slang",
+  `「${slang.phrase}」`,
+  `意思：${slang.meaningZh}`,
+  `例句：${slang.example}`,
   "",
-  "<b>今日天气</b>",
-  `${weather.summary}`,
+  "──────────",
+  "今日天气 | Chicago",
+  weather.summary,
   "",
-  "<b>今日穿搭</b>",
-  `场景: ${outfit.context}`,
-  `主线: ${outfit.vibe}`,
-  `上身: ${outfit.top}`,
-  `下身: ${outfit.bottom}`,
-  `外套: ${outfit.outer}`,
-  `鞋包: ${outfit.shoesAndBag}`,
-  `配件: ${outfit.accessories}`,
+  "──────────",
+  "今日穿搭 | Outfit",
+  `场景：${outfit.context}`,
+  `风格：${outfit.vibe}`,
+  `上身：${outfit.top}`,
+  `下身：${outfit.bottom}`,
+  `外套：${outfit.outer}`,
+  `鞋包：${outfit.shoesAndBag}`,
+  `配件：${outfit.accessories}`,
   "",
-  "<b>为什么适合 Hazel</b>",
-  ...outfit.why.map((line) => `- ${line}`),
+  "──────────",
+  "为什么适合 Hazel",
+  ...outfit.why.map((line) => `• ${line}`),
   "",
-  "<b>如果衣柜里没有</b>",
-  ...outfit.buyInstead.map((line) => `- ${line}`),
-  "",
-  "<b>后续可接图片版</b>",
-  "已预留图像生成位，后面接 API 后可以每天生成一张 look 示意图。",
+  "──────────",
+  "如果衣柜里没有",
+  ...outfit.buyInstead.map((line) => `• ${line}`),
 ];
 
-const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    chat_id: chatId,
-    text: lines.join("\n").slice(0, 3900),
-    disable_web_page_preview: true,
-  }),
-});
+const text = lines.join("\n").slice(0, 3900);
+const image = await maybeGenerateOutfitImage(profile, outfit, weather);
 
-if (!response.ok) {
-  const body = await response.text();
-  throw new Error(`Hazel Telegram send failed: ${response.status} ${body}`);
+if (image) {
+  const response = await sendTelegramPhoto(botToken, chatId, image, text);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Hazel Telegram photo send failed: ${response.status} ${body}`);
+  }
+} else {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      disable_web_page_preview: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Hazel Telegram send failed: ${response.status} ${body}`);
+  }
 }
 
 console.log("Hazel Telegram brief sent.");
@@ -127,7 +143,7 @@ async function fetchChicagoWeather() {
       min,
       code,
       condition,
-      summary: `Chicago ${condition}，最高 ${max}°C，最低 ${min}°C。`,
+      summary: buildWeatherSummary(condition, max, min, code),
     };
   } catch {
     return fallbackWeather();
@@ -139,26 +155,30 @@ function fallbackWeather() {
   const monthNumber = Number(month);
 
   if (monthNumber <= 3) {
-    return { max: 7, min: 0, code: -1, condition: "偏冷", summary: "Chicago 偏冷，体感仍接近冬末初春。" };
+    return { max: 7, min: 0, code: -1, condition: "偏冷", summary: "芝加哥偏冷，体感仍接近冬末初春，出门要保暖。" };
   }
   if (monthNumber <= 5) {
-    return { max: 18, min: 9, code: -1, condition: "春季微凉", summary: "Chicago 春季微凉，适合轻外套叠穿。" };
+    return { max: 18, min: 9, code: -1, condition: "春季微凉", summary: "芝加哥春季微凉，适合轻外套叠穿。" };
   }
   if (monthNumber <= 8) {
-    return { max: 29, min: 21, code: -1, condition: "偏暖", summary: "Chicago 偏暖，适合轻薄清爽搭配。" };
+    return { max: 29, min: 21, code: -1, condition: "偏暖", summary: "芝加哥偏暖，适合轻薄清爽搭配。" };
   }
   if (monthNumber <= 10) {
-    return { max: 16, min: 8, code: -1, condition: "秋凉", summary: "Chicago 秋凉，适合外套和围巾层次。" };
+    return { max: 16, min: 8, code: -1, condition: "秋凉", summary: "芝加哥秋凉，适合外套和围巾层次。" };
   }
-  return { max: 6, min: -1, code: -1, condition: "寒冷", summary: "Chicago 寒冷，适合冬季保暖层次搭配。" };
+  return { max: 6, min: -1, code: -1, condition: "寒冷", summary: "芝加哥寒冷，适合冬季保暖层次搭配。" };
 }
 
 function buildOutfit(profile, weather, date) {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    weekday: "short",
+  }).format(date);
   const dayIndex = Number(new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Chicago",
     day: "numeric",
   }).format(date));
-  const context = profile.contexts[(dayIndex - 1) % profile.contexts.length];
+  const context = pickContext(weekday, dayIndex);
 
   if (weather.max <= 5) {
     return buildColdLook(context);
@@ -170,6 +190,21 @@ function buildOutfit(profile, weather, date) {
     return buildMildLook(context);
   }
   return buildWarmLook(context);
+}
+
+function pickContext(weekday, dayIndex) {
+  if (["Mon", "Tue", "Wed", "Thu", "Fri"].includes(weekday)) {
+    return "school";
+  }
+  return dayIndex % 2 === 0 ? "weekend outings" : "date";
+}
+
+function buildWeatherSummary(condition, max, min, code) {
+  const snowCodes = [71, 73, 75, 77, 85, 86];
+  if (snowCodes.includes(code) && max <= 5) {
+    return `芝加哥 ${condition}，最高 ${max}°C，最低 ${min}°C，注意保暖和路面湿滑。`;
+  }
+  return `芝加哥 ${condition}，最高 ${max}°C，最低 ${min}°C。`;
 }
 
 function buildColdLook(context) {
@@ -447,4 +482,61 @@ function pickGreetingEmoji(date) {
 function pickSlang(date) {
   const day = Number(new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: "America/Chicago" }).format(date));
   return SLANGS[(day - 1) % SLANGS.length];
+}
+
+async function maybeGenerateOutfitImage(profile, outfit, weather) {
+  if (!openAiApiKey) {
+    return null;
+  }
+
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openAiApiKey}`,
+    },
+    body: JSON.stringify({
+      model: openAiImageModel,
+      prompt: buildImagePrompt(profile, outfit, weather),
+      size: "1024x1536",
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`OpenAI image generation failed: ${response.status} ${body}`);
+  }
+
+  const payload = await response.json();
+  const b64 = payload?.data?.[0]?.b64_json;
+  if (!b64) {
+    return null;
+  }
+
+  return Buffer.from(b64, "base64");
+}
+
+function buildImagePrompt(profile, outfit, weather) {
+  return [
+    "Create a realistic full-body outfit reference image.",
+    `Subject: East Asian woman, ${profile.age} years old, ${profile.height_cm}cm, balanced figure, slightly fuller bust.`,
+    "Style: elegant, refined, high-end, softly sexy, mature Korean-Chinese city style.",
+    `Weather: Chicago, ${weather.condition}, high ${weather.max}C, low ${weather.min}C.`,
+    `Outfit vibe: ${outfit.vibe}.`,
+    `Top: ${outfit.top}. Bottom: ${outfit.bottom}. Outerwear: ${outfit.outer}. Shoes and bag: ${outfit.shoesAndBag}. Accessories: ${outfit.accessories}.`,
+    "Make the styling flattering and realistic for Hazel, with clean neckline handling and polished proportions.",
+    "Natural editorial lighting, premium textures, no text, no collage, one person."
+  ].join(" ");
+}
+
+async function sendTelegramPhoto(token, targetChatId, imageBuffer, caption) {
+  const form = new FormData();
+  form.append("chat_id", targetChatId);
+  form.append("caption", caption.slice(0, 1000));
+  form.append("photo", new Blob([imageBuffer], { type: "image/png" }), "hazel-look.png");
+
+  return fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: "POST",
+    body: form,
+  });
 }

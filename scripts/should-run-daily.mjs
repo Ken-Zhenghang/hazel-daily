@@ -31,4 +31,4 @@ if (!outputPath) {
   process.exit(0);
 }
 
-await appendFile(outputPath, `should_run=${shouldRun}\nlocal_time=${localTime}\n`, "utf8");
+await appendF

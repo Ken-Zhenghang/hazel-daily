@@ -2,7 +2,7 @@ name: Daily Hazel
 
 on:
   schedule:
-    - cron: "30 * * * *"
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         env:
           TARGET_HOUR: 7
           TARGET_MINUTE: 30
-          BUFFER_MINUTES: 20
+          BUFFER_MINUTES: 40
         run: node ./scripts/should-run-daily.mjs
 
       - name: Send Hazel Telegram brief
@@ -31,4 +31,3 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node ./scripts/send-telegram-hazel.mjs
-

@@ -219,9 +219,9 @@ console.log("Hazel Telegram brief sent.");
 
 async function fetchWorldBrief() {
   const [politics, economy, military] = await Promise.all([
-    fetchGoogleNewsCategory("international politics OR geopolitics", "政治"),
-    fetchGoogleNewsCategory("global economy OR international economy", "经济"),
-    fetchGoogleNewsCategory("international military OR defense", "军事"),
+    fetchGoogleNewsCategory("geopolitics OR diplomacy OR sanctions OR summit", "政治"),
+    fetchGoogleNewsCategory("global economy OR oil OR trade OR inflation OR tariffs", "经济"),
+    fetchGoogleNewsCategory("defense OR military OR strike OR missiles OR troops", "军事"),
   ]);
 
   return [politics, economy, military].filter(Boolean);
@@ -243,7 +243,9 @@ async function fetchGoogleNewsCategory(query, category) {
         source: extractSourceFromTitle(decodeHtml(readXmlTag(item, "title"))),
         description: cleanNewsDescription(readXmlTag(item, "description")),
       }))
-      .find((item) => item.title && item.url);
+      .filter((item) => item.title && item.url)
+      .filter((item) => isUsefulWorldNews(item.title, item.source, category))
+      .find(Boolean);
 
     if (!top) return null;
 
@@ -735,36 +737,84 @@ function cleanNewsDescription(value) {
 
 function summarizeWorldNews(title, description, category) {
   const text = `${title} ${description}`.toLowerCase();
+  const countries = extractCountries(title);
+  const countryLabel = countries.length ? countries.join("、") : "相关国家";
 
   if (category === "政治") {
     if (/(ceasefire|talks|meeting|summit|negotiat|deal)/i.test(text)) {
-      return "这条主要是各方在谈判、会晤或寻找政治解决方案，重点看有没有实质进展。";
+      return `${countryLabel} 正在谈判、会晤或推动政治协商，重点看会不会出现新的协议或立场变化。`;
     }
     if (/(sanction|election|parliament|government|minister|president)/i.test(text)) {
-      return "这条主要涉及政府决策、选举或制裁变化，可能影响接下来的国际关系走向。";
+      return `${countryLabel} 涉及政府决策、制裁或政治动作，可能继续影响外交关系和政策走向。`;
     }
-    return "这条主要反映国际政治关系的新变化，重点看各国立场和下一步动作。";
+    return `${countryLabel} 的政治关系出现新变化，重点看下一步表态和国际反应。`;
   }
 
   if (category === "经济") {
     if (/(inflation|rate|fed|central bank|tariff|trade)/i.test(text)) {
-      return "这条主要关系到利率、通胀或贸易政策，可能影响全球市场和消费预期。";
+      return `${countryLabel} 的利率、通胀或贸易政策出现变化，可能影响市场情绪、消费和进出口。`;
     }
     if (/(oil|energy|market|stocks|recession|growth)/i.test(text)) {
-      return "这条主要反映市场、能源或增长预期变化，重点看对经济信心的影响。";
+      return `${countryLabel} 牵动能源、市场或增长预期，重点看油价、航运和全球风险偏好怎么变。`;
     }
-    return "这条主要说明全球经济和市场出现了新的变化，值得关注后续连锁反应。";
+    return `${countryLabel} 引发新的经济或市场变化，后续可能带来连锁反应。`;
   }
 
   if (category === "军事") {
     if (/(strike|attack|missile|drone|troops|combat)/i.test(text)) {
-      return "这条主要是军事行动或冲突升级，重点看局势是否进一步扩大。";
+      return `${countryLabel} 出现军事打击、冲突或兵力动作，重点看局势会不会继续升级。`;
     }
     if (/(exercise|navy|defense|weapon|aid|security)/i.test(text)) {
-      return "这条主要涉及军演、军援或防务动作，通常会影响地区安全气氛。";
+      return `${countryLabel} 的军演、军援或防务部署有新变化，通常会推高地区安全紧张度。`;
     }
-    return "这条主要反映军事和安全局势的新动向，重点看风险有没有上升。";
+    return `${countryLabel} 的军事与安全局势出现新动向，重点看风险是否继续上升。`;
   }
 
   return "这条是今天值得关注的国际动态，重点看它接下来会不会继续发酵。";
+}
+
+function isUsefulWorldNews(title, source, category) {
+  const text = `${title} ${source}`.toLowerCase();
+  const banned = /(lecture|webinar|alum|project|campus|university|opinion|editorial|podcast|newsletter)/i;
+  if (banned.test(text)) return false;
+
+  if (category === "政治") {
+    return /(china|russia|ukraine|israel|gaza|iran|u\.s\.|us|europe|eu|india|taiwan|sanction|summit|diplom|ceasefire|minister|president)/i.test(text);
+  }
+  if (category === "经济") {
+    return /(economy|oil|trade|inflation|tariff|market|shipping|hormuz|energy|stocks|recession|growth)/i.test(text);
+  }
+  if (category === "军事") {
+    return /(military|defense|missile|drone|strike|attack|troops|navy|security|weapon|hormuz|red sea)/i.test(text);
+  }
+  return true;
+}
+
+function extractCountries(title) {
+  const mapping = [
+    ["u.s.", "美国"],
+    ["united states", "美国"],
+    ["us ", "美国"],
+    ["china", "中国"],
+    ["russia", "俄罗斯"],
+    ["ukraine", "乌克兰"],
+    ["germany", "德国"],
+    ["france", "法国"],
+    ["uk", "英国"],
+    ["britain", "英国"],
+    ["iran", "伊朗"],
+    ["israel", "以色列"],
+    ["gaza", "加沙"],
+    ["taiwan", "台湾"],
+    ["india", "印度"],
+    ["japan", "日本"],
+    ["eu", "欧盟"],
+    ["europe", "欧洲"],
+    ["hormuz", "霍尔木兹海峡周边"],
+    ["red sea", "红海周边"],
+  ];
+
+  const text = String(title).toLowerCase();
+  const hits = mapping.filter(([key]) => text.includes(key)).map(([, label]) => label);
+  return [...new Set(hits)].slice(0, 3);
 }

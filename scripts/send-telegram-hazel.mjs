@@ -45,6 +45,73 @@ const SLANGS = [
   }
 ];
 
+const PROGRAM_TRACKS = [
+  {
+    university: "DePaul University",
+    major: "TESOL / Applied Linguistics",
+    lane: "教育 / 英语",
+    difficulty: "中等偏友好",
+    why: "适合英语基础继续强化，也能衔接教育和语言教学方向。",
+    prep: "继续提升口语、写作和课堂表达，整理教学或辅导相关经历。"
+  },
+  {
+    university: "Northeastern Illinois University",
+    major: "TESOL",
+    lane: "教育 / 英语",
+    difficulty: "友好",
+    why: "方向明确，和英语学习背景贴近，申请压力通常比顶尖名校低。",
+    prep: "重点准备语言成绩和清晰的职业目标陈述。"
+  },
+  {
+    university: "Loyola University Chicago",
+    major: "Higher Education",
+    lane: "教育",
+    difficulty: "中等",
+    why: "适合以后想在学校、学生服务或教育管理领域发展。",
+    prep: "补充教育相关实习、校园服务或志愿经历。"
+  },
+  {
+    university: "National Louis University",
+    major: "Counseling / Education-related track",
+    lane: "教育 / 助人方向",
+    difficulty: "友好",
+    why: "更偏实践和职业导向，门槛相对没那么高。",
+    prep: "准备个人陈述，突出同理心、沟通和服务他人的经历。"
+  },
+  {
+    university: "University of Illinois Springfield",
+    major: "Public Health",
+    lane: "医学相关 / 公卫",
+    difficulty: "中等偏友好",
+    why: "比临床医学门槛低很多，但仍然能进入健康和医疗体系。",
+    prep: "补基础统计、健康议题理解和服务型经历。"
+  },
+  {
+    university: "Governors State University",
+    major: "Health Administration",
+    lane: "医学相关 / 医疗管理",
+    difficulty: "友好",
+    why: "避开临床高门槛，更适合从管理、服务和医疗体系切入。",
+    prep: "积累行政、沟通、组织协调或医疗服务相关经历。"
+  },
+  {
+    university: "Saint Xavier University",
+    major: "Education",
+    lane: "教育",
+    difficulty: "友好",
+    why: "学校和项目通常更务实，适合先把研究生申请跑通。",
+    prep: "把推荐信、个人陈述和语言成绩准备扎实。"
+  },
+  {
+    university: "Lewis University",
+    major: "Public Health or Education-related track",
+    lane: "教育 / 医学相关",
+    difficulty: "友好",
+    why: "适合以稳妥录取为优先，再逐步往更明确方向靠。",
+    prep: "突出稳定成绩、认真态度和清晰的学习规划。"
+  }
+];
+
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const openAiApiKey = process.env.OPENAI_API_KEY;
@@ -58,9 +125,13 @@ if (!botToken || !chatId) {
 const profilePath = path.join(process.cwd(), "data", "hazel-profile.json");
 const profile = JSON.parse(await readFile(profilePath, "utf8"));
 const now = new Date();
-const weather = await fetchChicagoWeather();
+const [weather, worldBrief] = await Promise.all([
+  fetchChicagoWeather(),
+  fetchWorldBrief(),
+]);
 const slang = pickSlang(now);
 const outfit = buildOutfit(profile, weather, now);
+const program = pickProgram(now);
 
 const lines = [
   `${pickGreetingEmoji(now)} Hazel，早上好`,
@@ -74,6 +145,10 @@ const lines = [
   "──────────",
   "今日天气 | Chicago",
   weather.summary,
+  "",
+  "──────────",
+  "国际时局 | Top 3",
+  ...renderWorldBrief(worldBrief),
   "",
   "──────────",
   "今日穿搭 | Outfit",
@@ -92,6 +167,15 @@ const lines = [
   "──────────",
   "如果衣柜里没有",
   ...outfit.buyInstead.map((line) => `• ${line}`),
+  "",
+  "──────────",
+  "今日专业 | Grad Pick",
+  `学校：${program.university}`,
+  `专业：${program.major}`,
+  `方向：${program.lane}`,
+  `门槛感受：${program.difficulty}`,
+  `为什么值得看：${program.why}`,
+  `今天该准备什么：${program.prep}`,
 ];
 
 const text = lines.join("\n").slice(0, 3900);
@@ -123,6 +207,67 @@ if (image) {
 }
 
 console.log("Hazel Telegram brief sent.");
+
+async function fetchWorldBrief() {
+  const [politics, economy, military] = await Promise.all([
+    fetchGoogleNewsCategory("international politics OR geopolitics", "政治"),
+    fetchGoogleNewsCategory("global economy OR international economy", "经济"),
+    fetchGoogleNewsCategory("international military OR defense", "军事"),
+  ]);
+
+  return [politics, economy, military].filter(Boolean);
+}
+
+async function fetchGoogleNewsCategory(query, category) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const xml = await response.text();
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((match) => match[1]);
+    const top = items
+      .map((item) => ({
+        title: decodeHtml(readXmlTag(item, "title")).replace(/\s+-\s+[^-]+$/, "").trim(),
+        url: readXmlTag(item, "link"),
+        dateLabel: readXmlTag(item, "pubDate"),
+        source: extractSourceFromTitle(decodeHtml(readXmlTag(item, "title"))),
+      }))
+      .find((item) => item.title && item.url);
+
+    if (!top) return null;
+
+    return {
+      category,
+      title: top.title,
+      url: top.url,
+      source: top.source || "Google News",
+      dateLabel: formatShortDate(top.dateLabel),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function renderWorldBrief(items) {
+  if (!items.length) {
+    return ["• 今天暂时没有抓到稳定的国际新闻摘要"];
+  }
+
+  return items.flatMap((item, index) => ([
+    `${index + 1}. ${item.category}｜${item.title}`,
+    `   来源：${item.source} · ${item.dateLabel}`,
+    `   ${item.url}`,
+  ]));
+}
+
+function pickProgram(date) {
+  const day = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    day: "numeric",
+  }).format(date));
+  return PROGRAM_TRACKS[(day - 1) % PROGRAM_TRACKS.length];
+}
 
 async function fetchChicagoWeather() {
   const url = "https://api.open-meteo.com/v1/forecast?latitude=41.8781&longitude=-87.6298&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FChicago&forecast_days=1";
@@ -539,4 +684,32 @@ async function sendTelegramPhoto(token, targetChatId, imageBuffer, caption) {
     method: "POST",
     body: form,
   });
+}
+
+function readXmlTag(xml, tag) {
+  const match = String(xml).match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i"));
+  return match ? match[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, "").trim() : "";
+}
+
+function decodeHtml(value) {
+  return String(value)
+    .replace(/&amp;/g, "&")
+    .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, "\"")
+    .replace(/&nbsp;/g, " ");
+}
+
+function extractSourceFromTitle(value) {
+  const parts = String(value).split(" - ");
+  return parts.length > 1 ? parts.at(-1) : "";
+}
+
+function formatShortDate(value) {
+  const parsed = Date.parse(String(value));
+  if (Number.isNaN(parsed)) return "今天";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "short",
+    day: "numeric",
+    timeZone: "America/Chicago",
+  }).format(new Date(parsed));
 }

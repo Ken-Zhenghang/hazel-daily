@@ -52,7 +52,8 @@ const PROGRAM_TRACKS = [
     lane: "教育 / 英语",
     difficulty: "中等偏友好",
     why: "适合英语基础继续强化，也能衔接教育和语言教学方向。",
-    prep: "继续提升口语、写作和课堂表达，整理教学或辅导相关经历。"
+    features: "课程通常兼顾语言学、教学法和真实课堂应用，方向清晰。",
+    appeal: "对正在学英语的人很友好，既实用，也容易讲清未来职业方向。"
   },
   {
     university: "Northeastern Illinois University",
@@ -60,7 +61,8 @@ const PROGRAM_TRACKS = [
     lane: "教育 / 英语",
     difficulty: "友好",
     why: "方向明确，和英语学习背景贴近，申请压力通常比顶尖名校低。",
-    prep: "重点准备语言成绩和清晰的职业目标陈述。"
+    features: "项目务实，聚焦英语教学和课堂沟通，不会太空泛。",
+    appeal: "如果想先稳稳申请上，再慢慢往教育领域深走，这类项目很合适。"
   },
   {
     university: "Loyola University Chicago",
@@ -68,7 +70,8 @@ const PROGRAM_TRACKS = [
     lane: "教育",
     difficulty: "中等",
     why: "适合以后想在学校、学生服务或教育管理领域发展。",
-    prep: "补充教育相关实习、校园服务或志愿经历。"
+    features: "更偏教育体系和学生支持，不要求你直接走高门槛教学执照路线。",
+    appeal: "如果喜欢教育环境，又不想把门槛拉得太高，这是很聪明的切入点。"
   },
   {
     university: "National Louis University",
@@ -76,7 +79,8 @@ const PROGRAM_TRACKS = [
     lane: "教育 / 助人方向",
     difficulty: "友好",
     why: "更偏实践和职业导向，门槛相对没那么高。",
-    prep: "准备个人陈述，突出同理心、沟通和服务他人的经历。"
+    features: "很多项目强调应用和职业落地，不会只停留在理论层面。",
+    appeal: "适合有同理心、想做助人型工作的人，也更容易把个人故事讲进去。"
   },
   {
     university: "University of Illinois Springfield",
@@ -84,7 +88,8 @@ const PROGRAM_TRACKS = [
     lane: "医学相关 / 公卫",
     difficulty: "中等偏友好",
     why: "比临床医学门槛低很多，但仍然能进入健康和医疗体系。",
-    prep: "补基础统计、健康议题理解和服务型经历。"
+    features: "偏健康管理、社区健康、政策和公共服务，不走临床超高门槛。",
+    appeal: "如果对医疗和健康有兴趣，但不想碰临床医学的高难度，这条路很稳。"
   },
   {
     university: "Governors State University",
@@ -92,7 +97,8 @@ const PROGRAM_TRACKS = [
     lane: "医学相关 / 医疗管理",
     difficulty: "友好",
     why: "避开临床高门槛，更适合从管理、服务和医疗体系切入。",
-    prep: "积累行政、沟通、组织协调或医疗服务相关经历。"
+    features: "更看重管理、协调、服务体系理解，适合不走硬核医学学术路线的人。",
+    appeal: "未来能进入医院、诊所、医疗机构的管理和服务岗位，实际就业更直接。"
   },
   {
     university: "Saint Xavier University",
@@ -100,7 +106,8 @@ const PROGRAM_TRACKS = [
     lane: "教育",
     difficulty: "友好",
     why: "学校和项目通常更务实，适合先把研究生申请跑通。",
-    prep: "把推荐信、个人陈述和语言成绩准备扎实。"
+    features: "项目风格通常更清楚直接，不会像顶级名校那样过度卷背景。",
+    appeal: "如果现阶段最重要的是先稳妥进入研究生体系，这类项目很值得看。"
   },
   {
     university: "Lewis University",
@@ -108,7 +115,8 @@ const PROGRAM_TRACKS = [
     lane: "教育 / 医学相关",
     difficulty: "友好",
     why: "适合以稳妥录取为优先，再逐步往更明确方向靠。",
-    prep: "突出稳定成绩、认真态度和清晰的学习规划。"
+    features: "项目通常更偏职业型和应用型，适合先建立美国本地学习经历。",
+    appeal: "对转轨申请的人比较友好，能先落地，再慢慢做更细的方向选择。"
   }
 ];
 
@@ -175,7 +183,8 @@ const lines = [
   `方向：${program.lane}`,
   `门槛感受：${program.difficulty}`,
   `为什么值得看：${program.why}`,
-  `今天该准备什么：${program.prep}`,
+  `项目特色：${program.features}`,
+  `吸引人的地方：${program.appeal}`,
 ];
 
 const text = lines.join("\n").slice(0, 3900);

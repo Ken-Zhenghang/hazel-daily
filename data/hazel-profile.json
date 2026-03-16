@@ -1,0 +1,60 @@
+{
+  "name": "Hazel",
+  "city": "Chicago",
+  "age": 29,
+  "height_cm": 163,
+  "body_type": "balanced with a slightly fuller bust",
+  "top_size": "M/L",
+  "bottom_size": "M/L",
+  "shoe_size_eu": 38,
+  "contexts": [
+    "school",
+    "weekend outings",
+    "date"
+  ],
+  "preferences": [
+    "fitted but not tight",
+    "refined",
+    "elegant",
+    "poised",
+    "grown-up Chinese aesthetic",
+    "high-waisted silhouettes",
+    "clean waist definition",
+    "structured outerwear",
+    "long boots",
+    "neutrals with occasional muted blue or olive"
+  ],
+  "avoid": [
+    "too cute",
+    "too tacky",
+    "overly girlish details",
+    "thin clingy tops across the bust",
+    "unstructured oversized pieces that hide shape"
+  ],
+  "fit_rules": [
+    "favor open necklines such as soft V-neck, square neck, and open collar",
+    "keep upper body clean and avoid bulky chest pockets or heavy ruffles",
+    "use waist emphasis or vertical lines to keep proportions sharp",
+    "for sexy styling, show line and polish instead of tightness everywhere",
+    "balance mini lengths with strong outerwear or tall boots",
+    "for campus looks, keep the silhouette tidy and elevated rather than childish"
+  ],
+  "style_keywords": [
+    "Korean light-mature",
+    "urban refined",
+    "quiet luxe",
+    "elegant with edge",
+    "softly sexy"
+  ],
+  "buy_next": [
+    "camel long wool coat",
+    "dark brown cropped leather jacket",
+    "charcoal fitted knit dress",
+    "black knee-high boots",
+    "cream scarf",
+    "dark olive structured bomber",
+    "clean A-line mini skirt",
+    "high-waisted straight jeans"
+  ]
+}
+

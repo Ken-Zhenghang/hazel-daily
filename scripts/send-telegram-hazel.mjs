@@ -241,6 +241,7 @@ async function fetchGoogleNewsCategory(query, category) {
         url: readXmlTag(item, "link"),
         dateLabel: readXmlTag(item, "pubDate"),
         source: extractSourceFromTitle(decodeHtml(readXmlTag(item, "title"))),
+        description: cleanNewsDescription(readXmlTag(item, "description")),
       }))
       .find((item) => item.title && item.url);
 
@@ -252,6 +253,7 @@ async function fetchGoogleNewsCategory(query, category) {
       url: top.url,
       source: top.source || "Google News",
       dateLabel: formatShortDate(top.dateLabel),
+      summaryZh: summarizeWorldNews(top.title, top.description, category),
     };
   } catch {
     return null;
@@ -265,6 +267,7 @@ function renderWorldBrief(items) {
 
   return items.flatMap((item, index) => ([
     `${index + 1}. ${item.category}｜${item.title}`,
+    `   核心内容：${item.summaryZh}`,
     `   来源：${item.source} · ${item.dateLabel}`,
     `   ${item.url}`,
   ]));
@@ -721,4 +724,47 @@ function formatShortDate(value) {
     day: "numeric",
     timeZone: "America/Chicago",
   }).format(new Date(parsed));
+}
+
+function cleanNewsDescription(value) {
+  return decodeHtml(String(value))
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function summarizeWorldNews(title, description, category) {
+  const text = `${title} ${description}`.toLowerCase();
+
+  if (category === "政治") {
+    if (/(ceasefire|talks|meeting|summit|negotiat|deal)/i.test(text)) {
+      return "这条主要是各方在谈判、会晤或寻找政治解决方案，重点看有没有实质进展。";
+    }
+    if (/(sanction|election|parliament|government|minister|president)/i.test(text)) {
+      return "这条主要涉及政府决策、选举或制裁变化，可能影响接下来的国际关系走向。";
+    }
+    return "这条主要反映国际政治关系的新变化，重点看各国立场和下一步动作。";
+  }
+
+  if (category === "经济") {
+    if (/(inflation|rate|fed|central bank|tariff|trade)/i.test(text)) {
+      return "这条主要关系到利率、通胀或贸易政策，可能影响全球市场和消费预期。";
+    }
+    if (/(oil|energy|market|stocks|recession|growth)/i.test(text)) {
+      return "这条主要反映市场、能源或增长预期变化，重点看对经济信心的影响。";
+    }
+    return "这条主要说明全球经济和市场出现了新的变化，值得关注后续连锁反应。";
+  }
+
+  if (category === "军事") {
+    if (/(strike|attack|missile|drone|troops|combat)/i.test(text)) {
+      return "这条主要是军事行动或冲突升级，重点看局势是否进一步扩大。";
+    }
+    if (/(exercise|navy|defense|weapon|aid|security)/i.test(text)) {
+      return "这条主要涉及军演、军援或防务动作，通常会影响地区安全气氛。";
+    }
+    return "这条主要反映军事和安全局势的新动向，重点看风险有没有上升。";
+  }
+
+  return "这条是今天值得关注的国际动态，重点看它接下来会不会继续发酵。";
 }

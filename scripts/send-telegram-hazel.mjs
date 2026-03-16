@@ -2,6 +2,49 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
+const SLANGS = [
+  {
+    phrase: "That eats.",
+    meaningZh: "意思是这很厉害、很出彩，通常用来夸人表现好或造型好看。",
+    example: "Hazel, your outfit today eats."
+  },
+  {
+    phrase: "I’m down.",
+    meaningZh: "意思是我可以、我愿意、我参加。",
+    example: "If you want coffee after class, I’m down."
+  },
+  {
+    phrase: "It’s giving...",
+    meaningZh: "意思是有那种感觉、那种氛围。",
+    example: "That coat is giving rich-girl energy."
+  },
+  {
+    phrase: "Low-key",
+    meaningZh: "意思是有点、暗暗地、低调地。",
+    example: "I low-key love this look on you."
+  },
+  {
+    phrase: "Bet.",
+    meaningZh: "意思是好、没问题、就这么定了。",
+    example: "7:30 brunch tomorrow? Bet."
+  },
+  {
+    phrase: "No cap.",
+    meaningZh: "意思是真的、不是开玩笑、我说实话。",
+    example: "No cap, that color looks amazing on you."
+  },
+  {
+    phrase: "It’s not that deep.",
+    meaningZh: "意思是别想太多，没那么严重。",
+    example: "Don’t stress over that text. It’s not that deep."
+  },
+  {
+    phrase: "Main character energy.",
+    meaningZh: "意思是很有主角感，很有存在感。",
+    example: "That whole outfit has main character energy."
+  }
+];
+
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -405,46 +448,3 @@ function pickSlang(date) {
   const day = Number(new Intl.DateTimeFormat("en-US", { day: "numeric", timeZone: "America/Chicago" }).format(date));
   return SLANGS[(day - 1) % SLANGS.length];
 }
-
-const SLANGS = [
-  {
-    phrase: "That eats.",
-    meaningZh: "意思是这很厉害、很出彩，通常用来夸人表现好或造型好看。",
-    example: "Hazel, your outfit today eats."
-  },
-  {
-    phrase: "I’m down.",
-    meaningZh: "意思是我可以、我愿意、我参加。",
-    example: "If you want coffee after class, I’m down."
-  },
-  {
-    phrase: "It’s giving...",
-    meaningZh: "意思是有那种感觉、那种氛围。",
-    example: "That coat is giving rich-girl energy."
-  },
-  {
-    phrase: "Low-key",
-    meaningZh: "意思是有点、暗暗地、低调地。",
-    example: "I low-key love this look on you."
-  },
-  {
-    phrase: "Bet.",
-    meaningZh: "意思是好、没问题、就这么定了。",
-    example: "7:30 brunch tomorrow? Bet."
-  },
-  {
-    phrase: "No cap.",
-    meaningZh: "意思是真的、不是开玩笑、我说实话。",
-    example: "No cap, that color looks amazing on you."
-  },
-  {
-    phrase: "It’s not that deep.",
-    meaningZh: "意思是别想太多，没那么严重。",
-    example: "Don’t stress over that text. It’s not that deep."
-  },
-  {
-    phrase: "Main character energy.",
-    meaningZh: "意思是很有主角感，很有存在感。",
-    example: "That whole outfit has main character energy."
-  }
-];
